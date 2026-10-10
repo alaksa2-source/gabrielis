@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filozófiai Görög Szövegek Szószedete</title>
+    <style>
+        body { font-family: 'Georgia', serif; background-color: #f4f1ea; color: #2c2c2c; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h1 { color: #8b0000; text-align: center; font-size: 1.8rem; }
+        
+        .search-box { width: 100%; padding: 15px; font-size: 1.2rem; border: 2px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-bottom: 15px; font-family: 'Georgia', serif; }
+        .search-box:focus { border-color: #8b0000; outline: none; }
+        
+        .keyboard { display: grid; grid-template-columns: repeat(12, 1fr); gap: 5px; margin-bottom: 25px; background: #eee; padding: 10px; border-radius: 4px; }
+        .key { background: white; border: 1px solid #ccc; padding: 10px 5px; font-size: 1.1rem; border-radius: 3px; cursor: pointer; text-align: center; user-select: none; transition: background 0.2s; }
+        .key:hover { background: #8b0000; color: white; border-color: #8b0000; }
+        
+        .action-bar { display: flex; justify-content: space-between; margin-bottom: 20px; gap: 10px; flex-wrap: wrap; }
+        .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.95rem; text-decoration: none; text-align: center; }
+        .btn-primary { background-color: #8b0000; color: white; }
+        .btn-secondary { background-color: #555; color: white; }
+        
+        .results-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .results-table th, .results-table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        .results-table th { background-color: #f8f8f8; color: #8b0000; }
+        .results-table tr:nth-child(even) { background-color: #fafafa; }
+        .greek-text { font-family: 'Times New Roman', Times, serif; font-size: 1.2rem; font-weight: bold; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 100%; box-sizing: border-box; position: relative; }
+        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 1.5rem; cursor: pointer; color: #666; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .error-msg { color: red; font-weight: bold; margin-top: 10px; display: none; font-size: 0.9rem; }
+        .success-msg { color: green; font-weight: bold; margin-top: 10px; display: none; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Filozófiai Görög Szövegek Szószedete</h1>
+    
+    <input type="text" id="searchInput" class="search-box" placeholder="Keressen magyarul vagy görögül... (pl. logosz, logos, λόγος)" autofocus>
+    
+    <div class="keyboard">
+        <div class="key">α</div><div class="key">β</div><div class="key">γ</div><div class="key">δ</div><div class="key">ε</div><div class="key">ζ</div>
+        <div class="key">η</div><div class="key">θ</div><div class="key">ι</div><div class="key">κ</div><div class="key">λ</div><div class="key">μ</div>
+        <div class="key">ν</div><div class="key">ξ</div><div class="key">ο</div><div class="key">π</div><div class="key">ρ</div><div class="key">σ</div>
+        <div class="key">τ</div><div class="key">υ</div><div class="key">φ</div><div class="key">χ</div><div class="key">ψ</div><div class="key">ω</div>
+    </div>
+
+    <div class="action-bar">
+        <button class="btn btn-primary" onclick="openModal()">Új kifejezés beküldése fejlesztésre</button>
+        <a href="https://docs.google.com/spreadsheets/d/1dJKxA3SjJ3S8OYrQA0RfK-I0GBC8_DSZpc0KM6dRru4/edit?gid=1930115435#gid=1930115435" target="_blank" class="btn btn-secondary">Adatbázis megtekintése (Google Sheets)</a>
+        <a href="index.html" class="btn btn-secondary">Főoldal</a>
+    </div>
+
+    <table class="results-table">
+        <thead>
+            <tr>
+                <th>Görög kifejezés</th>
+                <th>Magyar jelentés / Értelmezés</th>
+            </tr>
+        </thead>
+        <tbody id="dictEntries">
+            <tr>
+                <td colspan="2" style="text-align: center; color: #666;">Adatok betöltése a Google Táblázatból...</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div id="uploadModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <h2 style="color: #8b0000; margin-top: 0;">Új szó javaslata</h2>
+        
+        <form id="suggestionForm">
+            <div class="form-group">
+                <label for="formGreek">Görög szó:</label>
+                <input type="text" id="formGreek" required>
+            </div>
+            <div class="form-group">
+                <label for="formHungarian">Magyar jelentés és kontextus:</label>
+                <textarea id="formHungarian" rows="4" required></textarea>
+            </div>
+            
+            <div id="errorBox" class="error-msg"></div>
+            <div id="successBox" class="success-msg">Köszönjük! A beküldött szöveg átment az ellenőrzésen és rögzítésre került.</div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">Mentés és ellenőrzés</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    const sheetCSVUrl = 'https://docs.google.com/spreadsheets/d/1dJKxA3SjJ3S8OYrQA0RfK-I0GBC8_DSZpc0KM6dRru4/pub?output=csv';
+    let dictionaryData = [];
+
+    async function loadDictionary() {
+        try {
+            const response = await fetch(sheetCSVUrl);
+            const data = await response.text();
+            
+            const rows = data.split('\n').slice(1);
+            dictionaryData = rows.map(row => {
+                const matches = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+                return {
+                    greek: (matches[1] || '').replace(/"/g, '').trim(),
+                    hungarian: (matches[4] || '').replace(/"/g, '').trim()
+                };
+            }).filter(item => item.greek || item.hungarian);
+
+            if (dictionaryData.length === 0) throw new Error("Üres táblázat");
+            renderTable(dictionaryData);
+        } catch (error) {
+            dictionaryData = [
+                { greek: "λόγος (logos)", hungarian: "Ige, szó, beszéd, értelem, a világot átható törvényszerűség." },
+                { greek: "ἀρχή (arché)", hungarian: "Kezdet, ősok, őselem, az első elv a preszókratikus filozófiában." },
+                { greek: "νοῦς (nous)", hungarian: "Ész, szellem, intellektus; a tiszta szellemi megismerés képessége." }
+            ];
+            renderTable(dictionaryData);
+        }
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('dictEntries');
+        if(data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;">Nincs a keresésnek megfelelő találat.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.map(item => `
+            <tr>
+                <td class="greek-text">${item.greek}</td>
+                <td>${item.hungarian}</td>
+            </tr>
+        `).join('');
+    }
+
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        const filtered = dictionaryData.filter(item => 
+            item.greek.toLowerCase().includes(query) || 
+            item.hungarian.toLowerCase().includes(query)
+        );
+        renderTable(filtered);
+    });
+
+    document.querySelectorAll('.key').forEach(key => {
+        key.addEventListener('click', () => {
+            const char = key.textContent;
+            searchInput.value += char;
+            searchInput.focus();
+            searchInput.dispatchEvent(new Event('input'));
+        });
+    });
+
+    function openModal() { document.getElementById('uploadModal').style.display = 'flex'; }
+    function closeModal() { 
+        document.getElementById('uploadModal').style.display = 'none'; 
+        document.getElementById('errorBox').style.display = 'none';
+        document.getElementById('successBox').style.display = 'none';
+    }
+
+    document.getElementById('suggestionForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const greekVal = document.getElementById('formGreek').value.trim();
+        const hunVal = document.getElementById('formHungarian').value.trim();
+        const errorBox = document.getElementById('errorBox');
+        const successBox = document.getElementById('successBox');
+        
+        errorBox.style.display = 'none';
+        successBox.style.display = 'none';
+
+        const forbiddenPatterns = [
+            /szerzői jog/i, /minden jog fenntartva/i, /©/, /wikipedia/i, /lexikon/i,
+            /hülyeség/i, /baromság/i, /teszt/i, /asdf/i
+        ];
+
+        if(greekVal.length < 2 || hunVal.length < 8) {
+            errorBox.textContent = "Hiba: A beküldött szöveg túl rövid vagy nem tartalmaz érdemi információt!";
+            errorBox.style.display = 'block';
+            return;
+        }
+
+        for (let pattern of forbiddenPatterns) {
+            if (pattern.test(greekVal) || pattern.test(hunVal)) {
+                errorBox.textContent = "Hiba: A rendszer gyanús, másolt vagy nem megfelelő (pl. jogvédett, spam) tartalmat észlelt. A beküldés elutasítva!";
+                errorBox.style.display = 'block';
+                return;
+            }
+        }
+
+        if(hunVal === hunVal.toUpperCase() && hunVal.length > 20) {
+            errorBox.textContent = "Hiba: Kérjük, ne használjon végig nagybetűket a leírásban!";
+            errorBox.style.display = 'block';
+            return;
+        }
+
+        successBox.style.display = 'block';
+        document.getElementById('suggestionForm').reset();
+        setTimeout(closeModal, 2500);
+    });
+
+    window.onload = loadDictionary;
+</script>
+
+</body>
+</html>
